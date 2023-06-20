@@ -1,0 +1,185 @@
+// MPI.cpp : This file contains the 'main' function. Program execution begins and ends there.
+//
+#include<stdio.h>
+#include <iostream>
+#include <mpi.h>
+#include<malloc.h>
+#include <stdio.h>
+#include <mpi.h>
+#include <stdlib.h>
+#define ULL unsigned long long
+#define MPI_ULL MPI_UNSIGNED_LONG_LONG
+
+#define BUF_SIZE 15
+#define M 6
+#define N 9
+
+//septembar 2021
+
+int main(int argc, char** argv)
+{
+	MPI_Init(&argc, &argv);
+	MPI_Status status;
+	int rank, size, buf[9], buf1[9];
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+	MPI_File fh1, fh, fh2;
+	MPI_Datatype novi;
+	for (int i = 0; i < 9; i++)
+		buf[i] = i * rank;
+
+	//pod a
+	MPI_File_open(MPI_COMM_WORLD, "upis_devet_randnom.dat", MPI_MODE_CREATE | MPI_MODE_WRONLY,
+		MPI_INFO_NULL, &fh);
+	MPI_File_seek(fh, (size-(rank+1))*9*sizeof(int), MPI_SEEK_SET);
+	MPI_File_write(fh, buf, 9, MPI_INT, MPI_STATUS_IGNORE);
+
+	MPI_File_close(&fh);
+	
+	
+	MPI_File_open(MPI_COMM_WORLD, "upis_devet_randnom.dat", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh1);
+	MPI_File_read_at(fh1, (size - (rank + 1)) * 9 * sizeof(int),buf1,9, MPI_INT, &status);
+	MPI_File_close(&fh1);
+	printf("Proces %d:  ", rank);
+	
+	for (int i = 0; i < 9; i++)
+		printf("%d ", buf1[i]);
+
+	printf("\n");
+	
+	int gsizes[] = { M,N };
+	int distribs[] = { MPI_DISTRIBUTE_BLOCK,MPI_DISTRIBUTE_BLOCK };
+	int drags[] = { MPI_DISTRIBUTE_DFLT_DARG,MPI_DISTRIBUTE_DFLT_DARG };
+	int psizes[] = { 2,3 };
+	MPI_Type_create_darray(size, rank, 2, gsizes, distribs, drags, psizes, MPI_ORDER_C, MPI_INT, &novi);
+	MPI_Type_commit(&novi);
+
+
+
+	MPI_File_open(MPI_COMM_WORLD, "upis_kao_matrica.dat", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
+
+	MPI_File_set_view(fh2, 0, MPI_INT, novi, "native", MPI_INFO_NULL);
+	MPI_File_write_all(fh2, buf1, 9, MPI_INT,&status);
+	
+	MPI_File_close(&fh2);
+	
+	MPI_Finalize();
+}
+
+//oktobar 2021
+//int main(int argc, char** argv)
+//{
+//	MPI_Init(&argc, &argv);
+//	MPI_Status status;
+//	int rank, size, buf[BUF_SIZE], buf1[BUF_SIZE];
+//	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//	MPI_Comm_size(MPI_COMM_WORLD, &size);
+//
+//	MPI_File fh1, fh,fh2;
+//	MPI_Datatype novi;
+//	for (int i = 0; i < BUF_SIZE; i++)
+//		buf[i] = i * rank;
+//
+//	//pod a
+//	MPI_File_open(MPI_COMM_WORLD, "proba.dat", MPI_MODE_RDONLY,
+//		MPI_INFO_NULL, &fh);
+//	MPI_Offset file_size;
+//	MPI_File_get_size(fh, &file_size);
+//	int n = file_size / size;
+//	MPI_File_seek(fh, rank * n, MPI_SEEK_SET);
+//	MPI_File_read(fh, buf1, n/sizeof(int), MPI_INT, MPI_STATUS_IGNORE);
+//
+//	MPI_File_close(&fh);
+//	//odavde ide pod b
+//	/*MPI_File_open(MPI_COMM_WORLD, "proba.dat", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+//
+//	MPI_File_read_at(fh, ofset, buf1, BUF_SIZE, MPI_INT, &status);
+//
+//
+//	MPI_File_close(&fh);*/
+//
+//	printf("Proces %d:  ", rank);
+//	int broj_integera = n / sizeof(int);
+//	for (int i = 0; i < broj_integera; i++)
+//		printf("%d ", buf1[i]);
+//
+//	printf("\n");
+//	MPI_File_open(MPI_COMM_WORLD, "upis1.dat", MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL, &fh1);
+//	MPI_File_write_shared(fh1, buf1, n / sizeof(int), MPI_INT, &status);
+//	MPI_File_close(&fh1);
+//
+//	MPI_File_open(MPI_COMM_WORLD, "upis2.dat", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
+//	MPI_Type_vector(5, broj_integera / 5, size * broj_integera / 5, MPI_INT, &novi);
+//	MPI_Type_commit(&novi);
+//	MPI_File_set_view(fh2,rank* n / 5,MPI_INT,novi,"native",MPI_INFO_NULL);
+//	MPI_File_write_all_begin(fh2, buf1, broj_integera, MPI_INT);
+//	for (int i = 0; i < broj_integera; i++)
+//	{
+//		printf("%d ", buf1[i]);
+//	}
+//	MPI_File_write_all_end(fh2,buf1,&status);
+//	MPI_File_close(&fh2);
+//
+//	MPI_Finalize();
+//}
+
+
+
+
+//jun2021
+//int main(int argc, char** argv)
+//{
+//	MPI_Init(&argc, &argv);
+//	MPI_Status status;
+//	int rank, size,buf[BUF_SIZE],buf1[BUF_SIZE];
+//	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//	MPI_Comm_size(MPI_COMM_WORLD, &size);
+//
+//	MPI_File fh1,fh;
+//
+//	for (int i = 0; i < BUF_SIZE; i++)
+//		buf[i] = i*rank;
+//	
+//	//pod a
+//	MPI_File_open(MPI_COMM_WORLD, "proba.dat", MPI_MODE_CREATE | MPI_MODE_WRONLY,
+//		MPI_INFO_NULL, &fh);
+//	MPI_Datatype novi;
+//	MPI_Offset ofset;
+//	ofset = (size - (rank + 1)) * BUF_SIZE * sizeof(int);
+//		MPI_File_seek(fh, ofset, MPI_SEEK_SET);
+//		MPI_File_write(fh, buf, BUF_SIZE, MPI_INT, MPI_STATUS_IGNORE);
+//
+//			MPI_File_close(&fh);
+////odavde ide pod b
+//			MPI_File_open(MPI_COMM_WORLD, "proba.dat", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+//			
+//			MPI_File_read_at(fh, ofset, buf1, BUF_SIZE, MPI_INT, &status);
+//
+//
+//			MPI_File_close(&fh);
+//
+//			printf("Proces %d:  ",rank);
+//			for(int i=0;i<BUF_SIZE;i++)
+//				printf("%d ",buf1[i]);
+//
+//			printf("\n");
+////ovde pod c
+//			MPI_File_open(MPI_COMM_WORLD, "proba1.dat", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh1);
+//			int duzine_blokova[5], stride[5];
+//			//(sqrt(1+8*nuf_size)-1)/2
+//			duzine_blokova[0] = 1;
+//			stride[0] = 0;
+//			for (int i = 1; i < 5; i++)
+//			{
+//				duzine_blokova[i] = i + 1;
+//				stride[i] = stride[i - 1] + rank + size * i;
+//			}
+//			MPI_Type_indexed(5, duzine_blokova, stride, MPI_INT, &novi);
+//			MPI_File_set_view(fh, rank * sizeof(int), MPI_INT, novi, "native", MPI_INFO_NULL);
+//			MPI_File_write_all(fh1, buf1, BUF_SIZE, MPI_INT, &status);
+//
+//			MPI_File_close(&fh1);
+//
+//		MPI_Finalize();
+//}
